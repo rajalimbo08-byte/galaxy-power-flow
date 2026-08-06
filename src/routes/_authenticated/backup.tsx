@@ -62,13 +62,19 @@ function BackupPage() {
   const stamp = new Date().toISOString().slice(0, 10);
 
   function exportCsv(key: string, rows: Row[]) {
-    if (!rows.length) return toast.error("Nothing to export yet");
+    if (!rows.length) {
+      toast.error("Nothing to export yet");
+      return;
+    }
     download(`galaxy-${key}-${stamp}.csv`, toCsv(rows), "text/csv;charset=utf-8");
     toast.success("CSV downloaded");
   }
 
   function exportExcel(key: string, rows: Row[]) {
-    if (!rows.length) return toast.error("Nothing to export yet");
+    if (!rows.length) {
+      toast.error("Nothing to export yet");
+      return;
+    }
     // Excel opens UTF-8 CSV with BOM natively as a spreadsheet.
     download(`galaxy-${key}-${stamp}.xls.csv`, "\uFEFF" + toCsv(rows), "application/vnd.ms-excel");
     toast.success("Excel file downloaded");
