@@ -95,7 +95,9 @@ const INITIAL = {
 
 function NewReportPage() {
   const navigate = useNavigate();
-  const { profile, userId } = useSession();
+  const { session } = useSession();
+  const profile = session?.profile ?? null;
+  const userId = session?.userId ?? null;
   const [form, setForm] = useState({ ...INITIAL });
   const [checks, setChecks] = useState<Record<string, boolean>>({});
   const [photos, setPhotos] = useState<Record<string, Photo>>({});
@@ -149,9 +151,18 @@ function NewReportPage() {
   const photoList = PHOTO_SLOTS.map((c) => photos[c]).filter(Boolean) as Photo[];
 
   async function submit() {
-    if (!form.customer_name.trim()) return toast.error("Customer name is required");
-    if (!form.work_done.trim()) return toast.error("Describe the work carried out");
-    if (!userId) return toast.error("Session expired — please sign in again");
+    if (!form.customer_name.trim()) {
+      toast.error("Customer name is required");
+      return;
+    }
+    if (!form.work_done.trim()) {
+      toast.error("Describe the work carried out");
+      return;
+    }
+    if (!userId) {
+      toast.error("Session expired — please sign in again");
+      return;
+    }
 
     setBusy(true);
     setProgress(4);
