@@ -114,11 +114,12 @@ function TicketsPage() {
       );
       const parsed = ticketSchema.parse(cleaned);
       const { data: userData } = await supabase.auth.getUser();
-      const { error } = await supabase.from("tickets").insert({
+      const payload = {
         ...parsed,
         status: parsed.assigned_to ? "Assigned" : "Open",
         created_by: userData.user?.id ?? null,
-      });
+      };
+      const { error } = await supabase.from("tickets").insert(payload as never);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -132,7 +133,7 @@ function TicketsPage() {
 
   const updateTicket = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Record<string, unknown> }) => {
-      const { error } = await supabase.from("tickets").update(patch).eq("id", id);
+      const { error } = await supabase.from("tickets").update(patch as never).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -227,7 +228,7 @@ function TicketsPage() {
                   {canAssign && (
                     <div className="sm:col-span-2">
                       <Label className="mb-2 block">Assign Technician</Label>
-                      <Select value={form["assigned_to"] || undefined} onValueChange={(v) => set("assigned_to", v)}>
+                      <Select value={form["assigned_to"] ?? ""} onValueChange={(v) => set("assigned_to", v)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Unassigned" />
                         </SelectTrigger>
@@ -328,7 +329,7 @@ function TicketsPage() {
                 <div className="flex w-full flex-col gap-2 sm:w-56">
                   {canAssign && (
                     <Select
-                      value={t.assigned_to ?? undefined}
+                      value={t.assigned_to ?? ""}
                       onValueChange={(v) =>
                         updateTicket.mutate({
                           id: t.id,
@@ -403,7 +404,7 @@ function SelectField({
   return (
     <div>
       <Label className="mb-2 block">{label}</Label>
-      <Select value={value || undefined} onValueChange={onChange}>
+      <Select value={value} onValueChange={onChange}>
         <SelectTrigger>
           <SelectValue placeholder="Select" />
         </SelectTrigger>
