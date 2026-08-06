@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureReportFolder, uploadToDrive } from "@/lib/drive.functions";
 import { fetchTickets } from "@/lib/queries";
-import { compressImage, dataUrlToBase64, formatBytes } from "@/lib/report-media";
+import { compressImage, formatBytes } from "@/lib/report-media";
 import { buildReportPdf } from "@/lib/report-pdf";
 import { useSession } from "@/lib/session";
 
