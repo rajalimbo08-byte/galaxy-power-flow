@@ -115,8 +115,30 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
           <img src={logo.url} alt="Galaxy logo" className="h-7 w-auto" />
         </header>
-        <main className="min-w-0 flex-1 p-4 lg:p-8">{children}</main>
+        <main className="min-w-0 flex-1 p-4 pb-24 lg:p-8 lg:pb-8">{children}</main>
       </div>
+
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 backdrop-blur lg:hidden">
+        <div className="grid grid-cols-5">
+          {items.slice(0, 5).map((item) => {
+            const active = pathname.startsWith(item.to);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={cn(
+                  "flex min-w-0 flex-col items-center gap-1 px-1 py-2 text-[10px] font-medium transition-colors",
+                  active ? "text-primary" : "text-muted-foreground",
+                )}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                <span className="w-full truncate text-center">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

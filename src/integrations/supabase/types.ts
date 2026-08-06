@@ -490,7 +490,12 @@ export type Database = {
       is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "super_admin" | "admin" | "manager" | "technician"
+      app_role:
+        | "super_admin"
+        | "admin"
+        | "manager"
+        | "technician"
+        | "temp_technician"
       ticket_priority: "Low" | "Medium" | "High" | "Critical"
       ticket_status:
         | "Open"
@@ -627,7 +632,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "admin", "manager", "technician"],
+      app_role: [
+        "super_admin",
+        "admin",
+        "manager",
+        "technician",
+        "temp_technician",
+      ],
       ticket_priority: ["Low", "Medium", "High", "Critical"],
       ticket_status: ["Open", "Assigned", "In Progress", "Completed", "Closed"],
       user_status: ["Active", "Inactive"],

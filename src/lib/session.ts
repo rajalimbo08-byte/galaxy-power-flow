@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "super_admin" | "admin" | "manager" | "technician";
+export type AppRole = "super_admin" | "admin" | "manager" | "technician" | "temp_technician";
 
 export const PERMISSION_KEYS = [
   "can_create_tickets",
@@ -30,6 +30,7 @@ export const ROLE_LABELS: Record<AppRole, string> = {
   admin: "Admin",
   manager: "Manager",
   technician: "Technician",
+  temp_technician: "Temp Technician / Outsider",
 };
 
 export type SessionInfo = {
@@ -96,7 +97,8 @@ export function useSession() {
     isSuperAdmin: roles.includes("super_admin"),
     isAdmin: roles.includes("super_admin") || roles.includes("admin"),
     isManager: roles.includes("manager"),
-    isTechnician: roles.includes("technician") && roles.length === 1,
+    isTechnician:
+      (roles.includes("technician") || roles.includes("temp_technician")) && roles.length === 1,
     can: (key: PermissionKey) => Boolean(session?.permissions[key]),
   };
 }

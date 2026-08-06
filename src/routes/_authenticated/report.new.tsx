@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureReportFolder, uploadToDrive } from "@/lib/drive.functions";
 import { fetchTickets } from "@/lib/queries";
-import { compressImage, dataUrlToBase64, formatBytes } from "@/lib/report-media";
+import { compressImage, formatBytes } from "@/lib/report-media";
 import { buildReportPdf } from "@/lib/report-pdf";
 import { useSession } from "@/lib/session";
 
@@ -219,7 +219,7 @@ function NewReportPage() {
       setStage("Preparing Google Drive folder…");
       const { folderId } = await folderFn({ data: { reportNumber: reportRow.report_number } });
 
-      const total = photoList.length + (customerSig ? 1 : 0) + (engineerSig ? 1 : 0) + 1;
+      const total = photoList.length + 1;
       let done = 0;
       const step = () => {
         done += 1;
@@ -258,31 +258,7 @@ function NewReportPage() {
         step();
       }
 
-      const signatureIds: Record<string, { id: string; link: string }> = {};
-      for (const [key, sig] of [
-        ["customer", customerSig],
-        ["engineer", engineerSig],
-      ] as const) {
-        if (!sig) continue;
-        setStage(`Uploading ${key} signature…`);
-        const fileName = `${reportRow.report_number}-signature-${key}.jpg`;
-        const uploaded = await uploadFn({
-          data: { folderId, fileName, mimeType: "image/jpeg", base64: dataUrlToBase64(sig) },
-        });
-        signatureIds[key] = uploaded;
-        attachments.push({
-          report_id: reportRow.id,
-          kind: `signature_${key}`,
-          file_name: fileName,
-          drive_file_id: uploaded.id,
-          drive_folder_id: folderId,
-          drive_link: uploaded.link,
-          mime_type: "image/jpeg",
-          size_bytes: uploaded.size,
-        });
-        step();
-      }
-
+      // Signatures are embedded in the PDF — no separate signature files are filed to Drive.
       setStage("Generating PDF…");
       const { base64: pdfBase64 } = await buildReportPdf({
         reportNumber: reportRow.report_number,
@@ -365,10 +341,10 @@ function NewReportPage() {
           drive_folder_id: folderId,
           pdf_drive_id: pdf.id,
           pdf_url: pdf.link,
-          customer_signature_drive_id: signatureIds["customer"]?.id ?? null,
-          customer_signature_url: signatureIds["customer"]?.link ?? null,
-          engineer_signature_drive_id: signatureIds["engineer"]?.id ?? null,
-          engineer_signature_url: signatureIds["engineer"]?.link ?? null,
+          customer_signature_drive_id: null,
+          customer_signature_url: null,
+          engineer_signature_drive_id: null,
+          engineer_signature_url: null,
         } as never)
         .eq("id", reportRow.id);
 
