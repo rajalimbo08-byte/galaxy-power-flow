@@ -219,13 +219,6 @@ function NewReportPage() {
       setStage("Preparing Google Drive folder…");
       const { folderId } = await folderFn({ data: { reportNumber: reportRow.report_number } });
 
-      const total = photoList.length + 1;
-      let done = 0;
-      const step = () => {
-        done += 1;
-        setProgress(12 + Math.round((done / total) * 80));
-      };
-
       const attachments: {
         report_id: string;
         kind: string;
@@ -237,87 +230,82 @@ function NewReportPage() {
         size_bytes: number | null;
       }[] = [];
 
-      for (const [index, photo] of photoList.entries()) {
-        setStage(`Uploading photo ${index + 1} of ${photoList.length}…`);
-        const fileName = `${reportRow.report_number}-${String(index + 1).padStart(2, "0")}-${photo.caption
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")}.jpg`;
-        const uploaded = await uploadFn({
-          data: { folderId, fileName, mimeType: "image/jpeg", base64: photo.base64 },
-        });
-        attachments.push({
-          report_id: reportRow.id,
-          kind: "photo",
-          file_name: fileName,
-          drive_file_id: uploaded.id,
-          drive_folder_id: folderId,
-          drive_link: uploaded.link,
-          mime_type: "image/jpeg",
-          size_bytes: uploaded.size ?? photo.size,
-        });
-        step();
-      }
-
-      // Signatures are embedded in the PDF — no separate signature files are filed to Drive.
+      // Photos and signatures are embedded in the PDF — nothing else is filed to Drive.
       setStage("Generating PDF…");
+      setProgress(45);
       const { base64: pdfBase64 } = await buildReportPdf({
         reportNumber: reportRow.report_number,
         reportDate: form.report_date,
-        fields: {},
-        sections: [
-          {
-            title: "Customer & Site",
-            rows: [
-              ["Customer", form.customer_name],
-              ["Company", form.company_name],
-              ["Site", form.site_name],
-              ["Contact Number", form.contact_number],
-              ["Site Address", form.site_address],
-              ["Service Engineer", profile?.full_name ?? ""],
-            ],
-          },
-          {
-            title: "UPS & Battery",
-            rows: [
-              ["UPS Make", form.ups_make],
-              ["UPS Model", form.ups_model],
-              ["Capacity", form.ups_capacity],
-              ["UPS Serial", form.ups_serial],
-              ["Battery Make", form.battery_make],
-              ["Battery Model", form.battery_model],
-              ["Battery Qty", form.battery_qty],
-              ["Battery Serials", form.battery_serials],
-            ],
-          },
-          {
-            title: "Electrical Readings",
-            rows: [
-              ["Input Voltage", form.input_voltage],
-              ["Output Voltage", form.output_voltage],
-              ["Battery Voltage", form.battery_voltage],
-              ["Frequency", form.frequency],
-              ["Load %", form.load_pct],
-            ],
-          },
+        visitType: checks["chk_ups_installed"] ? "installation" : "breakdown",
+        siteAddress: [form.company_name, form.site_name, form.site_address].filter(Boolean).join(", "),
+        contactPerson: form.customer_name,
+        contactNumber: form.contact_number,
+        email: "",
+        item: form.ups_make || "UPS",
+        model: form.ups_model,
+        rating: form.ups_capacity,
+        serialNo: form.ups_serial,
+        systemDcVolt: form.battery_voltage,
+        batteryMake: form.battery_make,
+        batteryAh: form.battery_model,
+        batteryQty: form.battery_qty,
+        siteParams: [
+          ["ADEQUATE SPACE", ""],
+          ["PROPER VENTILATION", ""],
+          ["INPUT WIRE SIZE", ""],
+          ["OUTPUT WIRE SIZE", ""],
+          ["INPUT MCB RATING", ""],
+          ["OUTPUT MCB RATING", ""],
+          ["EARTHING : INPUT / OUTPUT", checks["chk_earthing"] ? "OK" : ""],
+          ["ROOM TEMPERATURE", ""],
+          ["ANY OTHER REMARK", ""],
         ],
-        checks: CHECKS.map(([key, label]) => ({ label, value: !!checks[key] })),
-        narrative: [
-          { label: "Complaint", value: form.complaint },
-          { label: "Fault Found", value: form.fault_found },
-          { label: "Root Cause", value: form.root_cause },
-          { label: "Work Done", value: form.work_done },
-          { label: "Spare Parts Used", value: form.spare_parts },
-          { label: "Recommendations", value: form.recommendations },
-          { label: "Remarks", value: form.remarks },
+        physicalChecks: [
+          ["TRANSPORT DAMAGE", ""],
+          ["SYSTEM PACKED/UNPACKED", ""],
+          ["SCRATCHES ON CABINET", ""],
+          ["WHEEL/BASE DAMAGE", ""],
+          ["ANY SHORT ITEM", ""],
+          ["DATE OF DELIVERY", ""],
+          ["ON/OFF SWITCH OPERATIONS", checks["chk_output_checked"] ? "OK" : ""],
+          ["DISPLAY PROPER WORKING", checks["chk_output_checked"] ? "OK" : ""],
+          ["OPERATIONAL TRAINING GIVEN TO", ""],
         ],
-        photos: photoList.map((p) => ({ caption: p.caption, dataUrl: p.dataUrl })),
+        actionTaken: [form.complaint, form.fault_found, form.root_cause, form.work_done]
+          .filter((t) => t && t.trim())
+          .join(" | "),
+        spares: form.spare_parts,
+        batteryVolts: [],
+        unit: {
+          inputR: form.input_voltage,
+          inputY: "",
+          inputB: "",
+          inputNE: "",
+          outputR: form.output_voltage,
+          outputY: "",
+          outputB: "",
+          outputNE: "",
+          charging: checks["chk_charging"] ? "YES" : "",
+          discharging: "",
+          readingDiff: "",
+          dg: "",
+        },
+        connectedLoads: form.load_pct ? `${form.load_pct} %` : "",
+        customerRemarks: [form.remarks, form.recommendations].filter((t) => t && t.trim()).join(" | "),
+        engineerName: profile?.full_name ?? "",
+        engineerMobile: profile?.mobile ?? "",
+        timeIn: "",
+        timeOut: "",
+        customerName: form.customer_name,
+        customerMobile: form.contact_number,
+        customerDesignation: "",
         customerSignature: customerSig,
         engineerSignature: engineerSig,
-        engineerName: profile?.full_name ?? "",
-        customerName: form.customer_name,
+        photos: photoList.map((p) => ({ caption: p.caption, dataUrl: p.dataUrl })),
       });
 
       setStage("Uploading PDF to Google Drive…");
+      setProgress(75);
       const pdfName = `${reportRow.report_number}-service-report.pdf`;
       const pdf = await uploadFn({
         data: { folderId, fileName: pdfName, mimeType: "application/pdf", base64: pdfBase64 },
@@ -332,7 +320,7 @@ function NewReportPage() {
         mime_type: "application/pdf",
         size_bytes: pdf.size,
       });
-      step();
+      setProgress(90);
 
       setStage("Finalising…");
       await supabase
@@ -360,6 +348,10 @@ function NewReportPage() {
       }
 
       setProgress(100);
+      // Drop in-memory photo/signature data once the PDF is filed.
+      setPhotos({});
+      setCustomerSig(null);
+      setEngineerSig(null);
       toast.success(`${reportRow.report_number} submitted and saved to Google Drive`);
       navigate({ to: "/reports" });
     } catch (err) {
