@@ -286,7 +286,7 @@ export async function buildReportPdf(input: PdfInput): Promise<{ blob: Blob; bas
       doc.line(x, rowY, x, rowY + upH);
       doc.setFont(F, "bold");
       doc.setFontSize(6.6);
-      doc.text(marks[i], x + 2, rowY + 9);
+      doc.text(marks[i] ?? "", x + 2, rowY + 9);
       doc.setFont(F, "normal");
       doc.setFontSize(7.5);
       doc.text(vals[i] || "", x + 12, rowY + 9);
