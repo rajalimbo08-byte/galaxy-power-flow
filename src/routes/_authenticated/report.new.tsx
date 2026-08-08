@@ -275,9 +275,7 @@ function NewReportPage() {
           .filter((t) => t && t.trim())
           .join(" | "),
         spares: form.spare_parts,
-        batteryVolts: form.battery_serials
-          ? []
-          : [],
+        batteryVolts: [],
         unit: {
           inputR: form.input_voltage,
           inputY: "",
