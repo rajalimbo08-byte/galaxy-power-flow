@@ -171,9 +171,9 @@ export async function buildReportPdf(input: PdfInput): Promise<{ blob: Blob; bas
   // left column
   label("CUSTOMER SITE  ADDRESS & BRANCH  CODE/ID:", M + 4, y + 9.5);
   doc.line(M, y + unitRowH, M + leftW, y + unitRowH);
-  const addrLines = doc.splitTextToSize(input.siteAddress || "", leftW - 10) as string[];
   doc.setFont(F, "normal");
   doc.setFontSize(8.5);
+  const addrLines = doc.splitTextToSize(input.siteAddress || "", leftW - 12) as string[];
   addrLines.slice(0, 4).forEach((line, i) => doc.text(line, M + 5, y + unitRowH + 12 + i * 11));
 
   const contactTop = y + blockH - unitRowH * 3;
@@ -352,13 +352,13 @@ export async function buildReportPdf(input: PdfInput): Promise<{ blob: Blob; bas
   label("MOB:", M + 4, y + 28);
   value(input.engineerMobile, M + 96, y + 28, half - 105, 9);
   label("SIGNATURE:", M + 4, y + 44);
-  label("TIME IN :", M + 4, y + 62);
-  value(input.timeIn, M + 48, y + 62, 60, 8.5);
-  label("TIME OUT :", M + 120, y + 62);
-  value(input.timeOut, M + 172, y + 62, 60, 8.5);
+  label("TIME IN :", M + 4, y + 66);
+  value(input.timeIn, M + 48, y + 66, 60, 8.5);
+  label("TIME OUT :", M + 120, y + 66);
+  value(input.timeOut, M + 172, y + 66, 60, 8.5);
   if (input.engineerSignature) {
     try {
-      doc.addImage(input.engineerSignature, "JPEG", M + 96, y + 32, 110, 30, undefined, "FAST");
+      doc.addImage(input.engineerSignature, "JPEG", M + 96, y + 30, 100, 26, undefined, "FAST");
     } catch {
       /* optional */
     }
