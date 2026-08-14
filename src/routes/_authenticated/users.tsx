@@ -168,13 +168,33 @@ function UsersPage() {
 
   return (
     <div>
-      <PageHeader
-        title="User Management"
-        description="Create accounts, assign roles and configure manager permissions."
-        action={
+      <div className="panel-premium mb-6 rounded-2xl p-6 lg:p-8">
+        <div className="relative z-10 flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-sidebar-border/60 bg-sidebar-accent/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]">
+              <ShieldCheck className="h-3.5 w-3.5" /> Super Admin Console
+            </span>
+            <h1 className="mt-3 text-3xl font-bold tracking-tight lg:text-4xl">User Management</h1>
+            <p className="mt-2 max-w-xl text-sm opacity-80">
+              Create accounts, assign roles and configure manager permissions across every Galaxy zone.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {ROLES.map((r) => (
+                <span
+                  key={r}
+                  className="rounded-full border border-sidebar-border/60 bg-sidebar-accent/30 px-3 py-1 text-xs font-medium"
+                >
+                  {ROLE_LABELS[r]}
+                  <span className="ml-2 opacity-70">
+                    {(profiles.data ?? []).filter((p) => roleOf.get(p.id) === r).length}
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button size="lg" className="shadow-elevated">
                 <Plus className="mr-2 h-4 w-4" /> New User
               </Button>
             </DialogTrigger>
@@ -233,8 +253,8 @@ function UsersPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        }
-      />
+        </div>
+      </div>
 
       {profiles.isLoading ? (
         <div className="space-y-3">
@@ -250,9 +270,15 @@ function UsersPage() {
               | Record<string, boolean>
               | undefined;
             return (
-              <Card key={p.id} className="shadow-card">
+              <Card
+                key={p.id}
+                className="surface-glass overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated"
+              >
                 <CardContent className="p-4">
                   <div className="flex flex-wrap items-center gap-4">
+                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-gradient text-sm font-bold text-primary-foreground">
+                      {(p.full_name || p.email || "?").slice(0, 2).toUpperCase()}
+                    </div>
                     <div className="min-w-52 flex-1">
                       <p className="font-semibold">{p.full_name || "(no name)"}</p>
                       <p className="text-sm text-muted-foreground">{p.email}</p>
