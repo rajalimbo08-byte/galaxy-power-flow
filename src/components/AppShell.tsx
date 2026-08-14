@@ -50,14 +50,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   const primaryRole = session.roles[0];
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="app-aurora flex min-h-screen">
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-sidebar text-sidebar-foreground transition-transform lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-elevated transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex items-center gap-3 border-b border-sidebar-border px-5 py-4">
+        <div className="relative flex items-center gap-3 overflow-hidden border-b border-sidebar-border px-5 py-4">
+          <span className="sheen pointer-events-none absolute inset-0" aria-hidden />
           <div className="rounded-md bg-background p-1.5">
             <img src={logo.url} alt="Galaxy logo" className="h-7 w-auto" />
           </div>
@@ -80,10 +81,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                 to={item.to}
                 onClick={() => setOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
                   active
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-card"
+                    : "text-sidebar-foreground/80 hover:translate-x-0.5 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -109,7 +110,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-3 border-b bg-card px-4 py-3 lg:hidden">
+        <header className="surface-glass sticky top-0 z-20 flex items-center gap-3 rounded-none px-4 py-3 lg:hidden">
           <button onClick={() => setOpen(true)} aria-label="Open menu">
             <Menu className="h-5 w-5" />
           </button>
@@ -118,7 +119,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="min-w-0 flex-1 p-4 pb-24 lg:p-8 lg:pb-8">{children}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 backdrop-blur lg:hidden">
+      <nav className="surface-glass fixed inset-x-0 bottom-0 z-40 rounded-none lg:hidden">
         <div className="grid grid-cols-5">
           {items.slice(0, 5).map((item) => {
             const active = pathname.startsWith(item.to);
