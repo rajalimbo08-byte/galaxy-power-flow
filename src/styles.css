@@ -108,6 +108,8 @@
   --chart-5: oklch(0.6 0.16 300);
   --gradient-brand: linear-gradient(135deg, var(--brand-navy), var(--primary));
   --shadow-card: 0 1px 2px oklch(0.33 0.13 274 / 0.06), 0 8px 24px -12px oklch(0.33 0.13 274 / 0.18);
+  --shadow-elevated: 0 2px 4px oklch(0.33 0.13 274 / 0.05), 0 24px 56px -24px oklch(0.33 0.13 274 / 0.35);
+  --shadow-glow: 0 0 0 1px oklch(1 0 0 / 0.5) inset, 0 18px 48px -20px oklch(0.575 0.164 248 / 0.55);
   --sidebar: oklch(0.28 0.11 272);
   --sidebar-foreground: oklch(0.93 0.02 250);
   --sidebar-primary: oklch(0.575 0.164 248);
@@ -180,4 +182,89 @@
 
 @utility shadow-card {
   box-shadow: var(--shadow-card);
+}
+
+@utility shadow-elevated {
+  box-shadow: var(--shadow-elevated);
+}
+
+/* Ambient aurora + fine grid backdrop for the whole app */
+@utility app-aurora {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--color-background);
+
+  &::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background:
+      radial-gradient(48rem 32rem at 12% -8%, color-mix(in oklab, var(--primary) 26%, transparent), transparent 70%),
+      radial-gradient(42rem 30rem at 92% 4%, color-mix(in oklab, var(--brand-navy) 24%, transparent), transparent 72%),
+      radial-gradient(38rem 26rem at 70% 100%, color-mix(in oklab, var(--info) 18%, transparent), transparent 70%);
+    filter: saturate(1.05);
+  }
+
+  &::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.5;
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--border) 70%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--border) 70%, transparent) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(70rem 44rem at 50% 0%, black, transparent 78%);
+  }
+}
+
+/* Frosted translucent surface */
+@utility surface-glass {
+  background-color: color-mix(in oklab, var(--card) 72%, transparent);
+  backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  box-shadow: var(--shadow-card);
+}
+
+/* Premium hero panel used for the admin console header */
+@utility panel-premium {
+  position: relative;
+  overflow: hidden;
+  color: var(--sidebar-foreground);
+  background-image:
+    radial-gradient(30rem 18rem at 88% -30%, color-mix(in oklab, var(--primary) 70%, transparent), transparent 70%),
+    var(--gradient-brand);
+  box-shadow: var(--shadow-elevated);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, oklch(1 0 0 / 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(1 0 0 / 0.07) 1px, transparent 1px);
+    background-size: 36px 36px;
+    mask-image: radial-gradient(28rem 18rem at 12% 120%, black, transparent 75%);
+  }
+}
+
+@utility sheen {
+  background-image: linear-gradient(120deg, transparent 20%, oklch(1 0 0 / 0.18) 45%, transparent 70%);
+  background-size: 220% 100%;
+  animation: sheen-slide 6s ease-in-out infinite;
+}
+
+@keyframes sheen-slide {
+  0%,
+  100% {
+    background-position: 180% 0;
+  }
+  55% {
+    background-position: -40% 0;
+  }
 }
