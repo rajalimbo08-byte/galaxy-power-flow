@@ -1,8 +1,19 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Camera, Loader2, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Camera,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  CloudOff,
+  Loader2,
+  MessageCircle,
+  X,
+} from "lucide-react";
+import { cellStatus, weakCells } from "@/lib/battery-health";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/PageHeader";
@@ -63,6 +74,9 @@ const CHECKS = [
 
 type Photo = { caption: string; dataUrl: string; base64: string; size: number };
 
+const STEPS = ["Customer & Visit", "UPS, Readings & Battery", "Checklist & Service", "Photos", "Sign-off"];
+const DRAFT_KEY = "galaxy-report-draft";
+
 const INITIAL = {
   ticket_id: "",
   report_date: new Date().toISOString().slice(0, 10),
@@ -106,6 +120,39 @@ function NewReportPage() {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [stage, setStage] = useState("");
+  const [step, setStep] = useState(0);
+  const [cells, setCells] = useState<string[]>(() => Array(40).fill(""));
+  const [done, setDone] = useState<{ number: string; link: string; phone: string; message: string } | null>(null);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const weak = weakCells(cells);
+
+  // Restore offline draft once on mount.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.form) setForm((f) => ({ ...f, ...d.form }));
+        if (d.checks) setChecks(d.checks);
+        if (Array.isArray(d.cells) && d.cells.length === 40) setCells(d.cells);
+        toast.info("Draft restored");
+      }
+    } catch {
+      /* ignore corrupt draft */
+    }
+    setDraftLoaded(true);
+  }, []);
+
+  // Auto-save draft (text fields only; photos/signatures stay in memory).
+  useEffect(() => {
+    if (!draftLoaded || done) return;
+    const t = setTimeout(() => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, checks, cells }));
+      setDraftSaved(true);
+    }, 600);
+    return () => clearTimeout(t);
+  }, [form, checks, cells, draftLoaded, done]);
 
   const folderFn = useServerFn(ensureReportFolder);
   const uploadFn = useServerFn(uploadToDrive);
@@ -275,7 +322,7 @@ function NewReportPage() {
           .filter((t) => t && t.trim())
           .join(" | "),
         spares: form.spare_parts,
-        batteryVolts: [],
+        batteryVolts: cells,
         unit: {
           inputR: form.input_voltage,
           inputY: "",
@@ -352,8 +399,16 @@ function NewReportPage() {
       setPhotos({});
       setCustomerSig(null);
       setEngineerSig(null);
+      localStorage.removeItem(DRAFT_KEY);
+      const digits = form.contact_number.replace(/\D/g, "");
+      const phone = digits.length === 10 ? `91${digits}` : digits;
+      setDone({
+        number: reportRow.report_number,
+        link: pdf.link,
+        phone,
+        message: `Galaxy Online Power Systems\nService Report ${reportRow.report_number}\nCustomer: ${form.customer_name}\nUPS: ${[form.ups_make, form.ups_capacity].filter(Boolean).join(" ")}\nWork done: ${form.work_done}\nPDF: ${pdf.link}`,
+      });
       toast.success(`${reportRow.report_number} submitted and saved to Google Drive`);
-      navigate({ to: "/reports" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not submit the report");
     } finally {
@@ -369,8 +424,55 @@ function NewReportPage() {
         description="Fill the visit details, attach site photos and capture signatures. The PDF is filed to Google Drive automatically."
       />
 
+      {done ? (
+        <Card className="shadow-card">
+          <CardContent className="space-y-4 p-6 text-center">
+            <CheckCircle2 className="mx-auto h-12 w-12 text-success" />
+            <p className="text-lg font-semibold">{done.number} submitted</p>
+            <p className="text-sm text-muted-foreground">PDF saved to Google Drive.</p>
+            <div className="flex flex-col justify-center gap-2 sm:flex-row">
+              <Button size="lg" asChild>
+                <a
+                  href={`https://wa.me/${done.phone}?text=${encodeURIComponent(done.message)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <MessageCircle className="h-4 w-4" /> Share on WhatsApp
+                </a>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <a href={done.link} target="_blank" rel="noreferrer">Open PDF</a>
+              </Button>
+              <Button size="lg" variant="ghost" onClick={() => navigate({ to: "/reports" })}>
+                All reports
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
       <div className="space-y-5">
-        <Section title="Visit">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-1 gap-1">
+            {STEPS.map((s, i) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStep(i)}
+                className={`h-1.5 flex-1 rounded-full ${i <= step ? "bg-primary" : "bg-muted"}`}
+                aria-label={s}
+              />
+            ))}
+          </div>
+          {draftSaved && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <CloudOff className="h-3 w-3" /> Draft saved
+            </span>
+          )}
+        </div>
+        <p className="text-sm font-semibold">
+          Step {step + 1}/{STEPS.length} · {STEPS[step]}
+        </p>
+        {step === 0 && <Section title="Visit">
           <div>
             <Label className="mb-2 block">Linked Ticket</Label>
             <Select value={form.ticket_id} onValueChange={applyTicket}>
@@ -399,8 +501,9 @@ function NewReportPage() {
               onChange={(e) => set("site_address", e.target.value)}
             />
           </div>
-        </Section>
+        </Section>}
 
+        {step === 1 && <>
         <Section title="UPS & Battery">
           <Field label="UPS Make" value={form.ups_make} onChange={(v) => set("ups_make", v)} />
           <Field label="UPS Model" value={form.ups_model} onChange={(v) => set("ups_model", v)} />
@@ -420,6 +523,39 @@ function NewReportPage() {
           <Field label="Load %" value={form.load_pct} onChange={(v) => set("load_pct", v)} />
         </Section>
 
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-base">Battery Cell Voltages (1–40)</CardTitle>
+            <p className="text-xs text-muted-foreground">Weak: 12V block &lt; 11.8V · 2V cell &lt; 1.95V</p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+              {cells.map((c, i) => {
+                const st = cellStatus(c);
+                return (
+                  <div key={i}>
+                    <p className="text-[10px] text-muted-foreground">#{i + 1}</p>
+                    <Input
+                      inputMode="decimal"
+                      value={c}
+                      onChange={(e) => setCells((arr) => arr.map((x, j) => (j === i ? e.target.value : x)))}
+                      className={`h-10 px-2 text-sm ${st === "weak" || st === "invalid" ? "border-destructive bg-destructive/10 text-destructive" : st === "ok" ? "border-success" : ""}`}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <div className={`mt-4 flex items-start gap-2 rounded-md p-3 text-sm ${weak.length ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              {weak.length
+                ? `Cell ${weak.map((n) => `#${n}`).join(", ")} weak / failing — replacement recommended.`
+                : "No weak cells detected."}
+            </div>
+          </CardContent>
+        </Card>
+        </>}
+
+        {step === 2 && <>
         <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="text-base">Checklist</CardTitle>
@@ -460,8 +596,9 @@ function NewReportPage() {
             ))}
           </CardContent>
         </Card>
+        </>}
 
-        <Card className="shadow-card">
+        {step === 3 && <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="text-base">
               Site Photographs
@@ -514,9 +651,9 @@ function NewReportPage() {
               );
             })}
           </CardContent>
-        </Card>
+        </Card>}
 
-        <Card className="shadow-card">
+        {step === 4 && <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="text-base">Signatures</CardTitle>
           </CardHeader>
@@ -524,7 +661,7 @@ function NewReportPage() {
             <SignaturePad label={`Service Engineer — ${profile?.full_name ?? ""}`} onChange={setEngineerSig} />
             <SignaturePad label="Customer" onChange={setCustomerSig} />
           </CardContent>
-        </Card>
+        </Card>}
 
         {busy && (
           <Card className="shadow-card">
@@ -537,13 +674,24 @@ function NewReportPage() {
           </Card>
         )}
 
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => navigate({ to: "/reports" })} disabled={busy}>
-            Cancel
+        <div className="sticky bottom-20 z-10 flex justify-between gap-2 rounded-lg border border-border bg-card p-3 shadow-card md:bottom-4">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => (step === 0 ? navigate({ to: "/reports" }) : setStep((s) => s - 1))}
+            disabled={busy}
+          >
+            <ChevronLeft className="h-4 w-4" /> {step === 0 ? "Cancel" : "Back"}
           </Button>
-          <Button onClick={submit} disabled={busy}>
-            {busy ? "Submitting…" : "Submit & file to Drive"}
-          </Button>
+          {step < STEPS.length - 1 ? (
+            <Button size="lg" onClick={() => setStep((s) => s + 1)}>
+              Next <ChevronRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button size="lg" onClick={submit} disabled={busy}>
+              {busy ? "Submitting…" : "Submit & file to Drive"}
+            </Button>
+          )}
         </div>
       </div>
     </div>
