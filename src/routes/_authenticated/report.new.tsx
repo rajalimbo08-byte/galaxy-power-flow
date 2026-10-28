@@ -694,6 +694,7 @@ function NewReportPage() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
