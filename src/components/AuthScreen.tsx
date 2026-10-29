@@ -28,7 +28,30 @@ export function AuthScreen() {
 
   const checkBootstrap = useServerFn(needsBootstrap);
   const bootstrapFn = useServerFn(createFirstSuperAdmin);
-  const bootstrap = useQuery({ queryKey: ["needs-bootstrap"], queryFn: () => checkBootstrap() });
+  // Skip the bootstrap round-trip on normal visits: once this browser session
+  // has seen "setup not needed", we don't ask the server again.
+  const bootstrapChecked = (() => {
+    try {
+      return sessionStorage.getItem("galaxy-bootstrap-checked");
+    } catch {
+      return null;
+    }
+  })();
+  const bootstrap = useQuery({
+    queryKey: ["needs-bootstrap"],
+    queryFn: async () => {
+      const res = await checkBootstrap();
+      try {
+        sessionStorage.setItem("galaxy-bootstrap-checked", res.needed ? "needed" : "not-needed");
+      } catch {
+        /* private mode */
+      }
+      return res;
+    },
+    enabled: bootstrapChecked === null,
+    staleTime: Infinity,
+    gcTime: 5 * 60_000,
+  });
   const setupMode = bootstrap.data?.needed === true;
 
   useEffect(() => {
