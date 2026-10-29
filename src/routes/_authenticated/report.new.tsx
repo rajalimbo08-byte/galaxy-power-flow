@@ -18,6 +18,7 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/PageHeader";
 import { SignaturePad } from "@/components/SignaturePad";
+import { FaultScanner } from "@/components/FaultScanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -556,6 +557,16 @@ function NewReportPage() {
         </>}
 
         {step === 2 && <>
+        <FaultScanner
+          onApply={(d) =>
+            setForm((f) => ({
+              ...f,
+              fault_found: [f.fault_found, `${d.fault_name} (Code: ${d.error_code}, ${d.severity})`].filter(Boolean).join("\n"),
+              root_cause: [f.root_cause, d.root_cause].filter(Boolean).join("\n"),
+              recommendations: [f.recommendations, d.recommendation].filter(Boolean).join("\n"),
+            }))
+          }
+        />
         <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="text-base">Checklist</CardTitle>

@@ -21,16 +21,9 @@ export function FaultScanner({ onApply }: { onApply: (d: FaultDiagnosis) => void
     setResult(null);
     try {
       const c = await compressImage(file);
-      const blob: Blob = (c as { blob?: Blob }).blob ?? (c as unknown as Blob);
-      const dataUrl: string = await new Promise((ok, no) => {
-        const r = new FileReader();
-        r.onload = () => ok(r.result as string);
-        r.onerror = no;
-        r.readAsDataURL(blob);
-      });
-      setPreview(dataUrl);
-      const [head, b64] = dataUrl.split(",");
-      const mimeType = head.match(/data:(.*);base64/)?.[1] ?? "image/jpeg";
+      setPreview(c.dataUrl);
+      const b64 = c.base64;
+      const mimeType = c.dataUrl.match(/data:(.*?);base64/)?.[1] ?? "image/jpeg";
       const out = await run({ data: { image: b64, mimeType, note: note || undefined } });
       if (out.error) toast.error(out.error);
       else if (out.result) setResult(out.result);
